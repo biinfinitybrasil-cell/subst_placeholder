@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Substituidor de Placeholders SQL</title>
+
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: "Manrope", Arial, sans-serif;
+      color: #1E293B;
+      background: linear-gradient(180deg, #1F4E82 0%, #2E64A4 34%, #F8FAFC 34%, #F8FAFC 100%);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    body[data-theme="light"] {
+      color: #1E293B;
+      background: linear-gradient(180deg, #EAF2FB 0%, #F8FAFC 45%, #FFFFFF 100%);
+    }
+
+    body[data-theme="dark"] {
+      color: #E2E8F0;
+      background: linear-gradient(180deg, #102A43 0%, #173B63 38%, #0F172A 38%, #0F172A 100%);
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: min(100%, 1680px);
+      height: calc(100vh - 52px);
+      margin: 0 auto;
+      padding: 14px 16px;
+      overflow: hidden;
+    }
+
+    .app-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 68px;
+      color: #FFFFFF;
+    }
+
+    body[data-theme="light"] .app-hero {
+      color: #1E293B;
+    }
+
+    .hero-content {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      padding: 5px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #EAF3FF;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    body[data-theme="light"] .eyebrow {
+      border-color: #C8D8EA;
+      background: #FFFFFF;
+      color: #2E64A4;
+    }
+
+    .app-title {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 32px);
+      line-height: 1.08;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .app-description {
+      margin: 6px 0 0;
+      color: #DBEAFE;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    body[data-theme="light"] .app-description {
+      color: #475569;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(440px, 540px);
+      gap: 14px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 18px;
+      background: #FFFFFF;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12);
+    }
+
+    body[data-theme="dark"] .panel {
+      border-color: #243B53;
+      background: #111827;
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.22);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    body[data-theme="dark"] .panel-header {
+      border-color: #243B53;
+      background: #111827;
+    }
+
+    .panel-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .panel-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #EAF2FB;
+      color: #2E64A4;
+      font-size: 15px;
+    }
+
+    body[data-theme="dark"] .panel-icon {
+      background: #193B5F;
+      color: #93C5FD;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #1E293B;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    body[data-theme="dark"] .panel-title {
+      color: #F8FAFC;
+    }
+
+    .panel-subtitle {
+      margin: 2px 0 0;
+      color: #64748B;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    body[data-theme="dark"] .panel-subtitle {
+      color: #94A3B8;
+    }
+
+    .panel-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      padding: 12px;
+    }
+
+    .editor-toolbar,
+    .search-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .locator-group {
+      display: grid;
+      grid-template-columns: 36px minmax(170px, 1fr) 36px auto;
+      align-items: center;
+      gap: 8px;
+      min-width: min(100%, 360px);
+    }
+
+    .file-field {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid #BFD1E6;
+      border-radius: 10px;
+      background: #F8FBFF;
+      color: #2E64A4;
+      font-size: 12px;
+      font-weight: 900;
+      transition: 0.2s ease;
+    }
+
+    .file-field:hover {
+      border-color: #2E64A4;
+      background: #EEF6FF;
+    }
+
+    body[data-theme="dark"] .file-field {
+      border-color: #31577C;
+      background: #162235;
+      color: #BFDBFE;
+    }
+
+    .file-field input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: #2E64A4;
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(46, 100, 164, 0.22);
+    }
+
+    .btn-primary:hover {
+      background: #25578F;
+    }
+
+    .btn-success {
+      background: #6CB33E;
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(108, 179, 62, 0.22);
+    }
+
+    .btn-success:hover {
+      background: #5A9E33;
+    }
+
+    .btn-lightblue {
+      background: #38BDF8;
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(56, 189, 248, 0.28);
+    }
+
+    .btn-lightblue:hover {
+      background: #0EA5E9;
+    }
+
+    .btn-orange {
+      background: #F97316;
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
+    }
+
+    .btn-orange:hover {
+      background: #EA580C;
+    }
+
+    .btn-outline {
+      border-color: #D4E2F0;
+      background: #FFFFFF;
+      color: #2E64A4;
+    }
+
+    .btn-outline:hover {
+      border-color: #2E64A4;
+      background: #F1F7FE;
+    }
+
+    body[data-theme="dark"] .btn-outline {
+      border-color: #334155;
+      background: #162235;
+      color: #BFDBFE;
+    }
+
+    body[data-theme="dark"] .btn-outline:hover {
+      border-color: #60A5FA;
+      background: #1E293B;
+    }
+
+    .btn-danger {
+      border-color: #FECACA;
+      background: #FFF7F7;
+      color: #B91C1C;
+    }
+
+    .btn-danger:hover {
+      background: #FEE2E2;
+    }
+
+    body[data-theme="dark"] .btn-danger {
+      border-color: #7F1D1D;
+      background: #2A1212;
+      color: #FCA5A5;
+    }
+
+    .icon-button {
+      width: 36px;
+      padding: 0;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 36px;
+      padding: 0 11px;
+      border: 1px solid #CBD5E1;
+      border-radius: 10px;
+      outline: none;
+      background: #FFFFFF;
+      color: #1E293B;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .search-input:focus {
+      border-color: #2E64A4;
+      box-shadow: 0 0 0 3px rgba(46, 100, 164, 0.14);
+    }
+
+    body[data-theme="dark"] .search-input {
+      border-color: #334155;
+      background: #0F172A;
+      color: #E2E8F0;
+    }
+
+    .counter-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #EAF8E4;
+      color: #4E8F2C;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    body[data-theme="dark"] .counter-chip {
+      background: #17331F;
+      color: #86EFAC;
+    }
+
+    .code-frame {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    body[data-code-theme="dark"] .code-frame {
+      border: 1px solid #1F2937;
+      background: #000000;
+    }
+
+    body[data-code-theme="light"] .code-frame {
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+    }
+
+    .line-gutter {
+      overflow: hidden;
+    }
+
+    body[data-code-theme="dark"] .line-gutter {
+      border-right: 1px solid #1F2937;
+      background: #090909;
+      color: #64748B;
+    }
+
+    body[data-code-theme="light"] .line-gutter {
+      border-right: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      color: #94A3B8;
+    }
+
+    .line-numbers {
+      min-height: 100%;
+      margin: 0;
+      padding: 14px 10px 14px 0;
+      text-align: right;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 13px;
+      line-height: 21px;
+      user-select: none;
+    }
+
+    .code-viewport {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    body[data-code-theme="dark"] .code-viewport {
+      background: #000000;
+    }
+
+    body[data-code-theme="light"] .code-viewport {
+      background: #FFFFFF;
+    }
+
+    .code-layer,
+    .code-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 14px;
+      border: 0;
+      outline: none;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 13px;
+      line-height: 21px;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    .code-layer {
+      z-index: 1;
+      overflow: visible;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    body[data-code-theme="dark"] .code-layer {
+      color: #FFFFFF;
+    }
+
+    body[data-code-theme="light"] .code-layer {
+      color: #1E293B;
+    }
+
+    .code-input {
+      z-index: 2;
+      resize: none;
+      overflow: auto;
+      background: transparent;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      caret-color: #6CB33E;
+    }
+
+    .code-input[readonly] {
+      cursor: text;
+    }
+
+    .code-input::placeholder {
+      color: #94A3B8;
+      -webkit-text-fill-color: #94A3B8;
+    }
+
+    .code-input::selection {
+      background: rgba(96, 165, 250, 0.34);
+      color: transparent;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 28px;
+      margin-top: 8px;
+      color: #64748B;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    body[data-theme="dark"] .status-bar {
+      color: #94A3B8;
+    }
+
+    .values-panel .panel-body {
+      gap: 10px;
+    }
+
+    .values-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .placeholder-list {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .placeholder-list::-webkit-scrollbar,
+    .code-input::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .placeholder-list::-webkit-scrollbar-thumb,
+    .code-input::-webkit-scrollbar-thumb {
+      border: 3px solid transparent;
+      border-radius: 999px;
+      background: #94A3B8;
+      background-clip: padding-box;
+    }
+
+    .small-note {
+      padding: 9px 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      background: #F8FAFC;
+      color: #64748B;
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    body[data-theme="dark"] .small-note {
+      border-color: #243B53;
+      background: #0F172A;
+      color: #94A3B8;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.58);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.is-open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(790px, 100%);
+      max-height: min(76vh, 720px);
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      background: #FFFFFF;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+    }
+
+    body[data-theme="dark"] .modal-box {
+      border-color: #334155;
+      background: #111827;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    body[data-theme="dark"] .modal-header {
+      border-color: #334155;
+    }
+
+    .modal-title {
+      margin: 0;
+      color: #1E293B;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    body[data-theme="dark"] .modal-title {
+      color: #F8FAFC;
+    }
+
+    .modal-body {
+      max-height: calc(min(76vh, 720px) - 68px);
+      overflow: auto;
+      padding: 18px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    body[data-theme="dark"] .modal-body {
+      color: #CBD5E1;
+    }
+
+    .modal-body h3 {
+      margin: 18px 0 8px;
+      color: #1E293B;
+      font-size: 15px;
+    }
+
+    body[data-theme="dark"] .modal-body h3 {
+      color: #F8FAFC;
+    }
+
+    .modal-body p {
+      margin: 0 0 10px;
+    }
+
+    .modal-body ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    .footer {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      padding: 10px 16px;
+      border-top: 1px solid #E2E8F0;
+      background: #FFFFFF;
+      color: #1E293B;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+      box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 4px;
+      vertical-align: middle;
+    }
+
+    .footer-logo {
+      display: inline-block;
+      height: 18px;
+      width: auto;
+      vertical-align: middle;
+      object-fit: contain;
+    }
+
+    .btn-lightblue.file-field,
+    body[data-theme="dark"] .btn-lightblue.file-field,
+    body[data-theme="light"] .btn-lightblue.file-field {
+      border-color: transparent;
+      background: #38BDF8;
+      color: #FFFFFF;
+    }
+
+    .btn-lightblue.file-field:hover,
+    body[data-theme="dark"] .btn-lightblue.file-field:hover,
+    body[data-theme="light"] .btn-lightblue.file-field:hover {
+      background: #0EA5E9;
+    }
+
+    @media (max-width: 1160px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+        padding-bottom: 68px;
+      }
+
+      .app-shell {
+        height: auto;
+        min-height: calc(100vh - 68px);
+        overflow: visible;
+      }
+
+      .app-hero {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .code-frame {
+        min-height: 520px;
+      }
+
+      .placeholder-list {
+        max-height: 420px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        padding: 10px;
+      }
+
+      .top-actions,
+      .toolbar-group,
+      .editor-toolbar,
+      .search-toolbar,
+      .values-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+
+      .locator-group {
+        grid-template-columns: 36px minmax(0, 1fr) 36px;
+        width: 100%;
+      }
+
+      .locator-group .counter-chip {
+        grid-column: 1 / -1;
+      }
+
+      .btn,
+      .file-field,
+      .search-input {
+        width: 100%;
+      }
+
+      .code-frame {
+        grid-template-columns: 46px minmax(0, 1fr);
+        min-height: 460px;
+      }
+
+      .line-numbers,
+      .code-layer,
+      .code-input {
+        font-size: 12px;
+        line-height: 20px;
+      }
+
+      .footer {
+        min-height: 64px;
+        padding: 10px 14px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body data-theme="dark" data-code-theme="dark">
+  <main class="app-shell">
+    <!-- Componente editável em GrapesJS: Cabeçalho -->
+    <header class="app-hero" data-gjs-name="Cabeçalho da Aplicação">
+      <section class="hero-content" aria-labelledby="page-title">
+        <span class="eyebrow">
+          <i class="fa-solid fa-code" aria-hidden="true"></i>
+          SQL Placeholder Builder
+        </span>
+        <h1 id="page-title" class="app-title">Substituidor de placeholders SQL</h1>
+        <p class="app-description">
+          Preencha valores à direita e veja a substituição acontecer em tempo real sem perder os placeholders originais.
+        </p>
+      </section>
+
+      <nav class="top-actions" aria-label="Ações principais">
+        <button id="instructions-button" class="btn btn-orange" type="button">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          Instruções
+        </button>
+        <button id="screen-theme-button" class="btn btn-outline" type="button">
+          <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+          Tela clara
+        </button>
+        <button id="code-theme-button" class="btn btn-outline" type="button">
+          <i class="fa-solid fa-terminal" aria-hidden="true"></i>
+          Código claro
+        </button>
+        <button id="undo-button" class="btn btn-outline" type="button">
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+          Desfazer
+        </button>
+        <button id="reset-values-button" class="btn btn-danger" type="button">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+          Resetar Valores
+        </button>
+        <button id="summary-button" class="btn btn-outline" type="button">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+          Resumo
+        </button>
+        <button id="copy-button" class="btn btn-primary" type="button">
+          <i class="fa-solid fa-copy" aria-hidden="true"></i>
+          Copiar Código
+        </button>
+        <button id="save-button" class="btn btn-success" type="button">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+          Salvar Código (.txt)
+        </button>
+      </nav>
+    </header>
+
+    <section class="workspace" data-gjs-name="Área de Trabalho Principal">
+      <!-- Componente editável em GrapesJS: Editor SQL -->
+      <section class="panel editor-panel" aria-labelledby="sql-panel-title" data-gjs-name="Editor SQL">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">
+              <i class="fa-solid fa-database" aria-hidden="true"></i>
+            </span>
+            <div>
+              <h2 id="sql-panel-title" class="panel-title">Código SQL</h2>
+              <p class="panel-subtitle">Placeholders, valores substituídos e comentários são destacados automaticamente.</p>
+            </div>
+          </div>
+
+          <span id="line-total" class="counter-chip">1 linha</span>
+        </header>
+
+        <div class="panel-body">
+          <div class="editor-toolbar">
+            <div class="toolbar-group">
+              <label class="file-field" for="sql-file">
+                <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i>
+                Carregar .txt ou .sql
+                <input id="sql-file" type="file" accept=".txt,.sql,text/plain">
+              </label>
+
+              <button id="detect-button" class="btn btn-outline" type="button">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                Identificar
+              </button>
+
+              <button id="clear-button" class="btn btn-danger" type="button">
+                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                Limpar
+              </button>
+            </div>
+
+            <div class="locator-group">
+              <button id="prev-placeholder-button" class="btn btn-outline icon-button" type="button" aria-label="Placeholder anterior">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+
+              <button id="locate-placeholder-button" class="btn btn-outline" type="button">
+                Localizar Placeholder
+              </button>
+
+              <button id="next-placeholder-button" class="btn btn-outline icon-button" type="button" aria-label="Próximo placeholder">
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </button>
+
+              <span id="placeholder-position" class="counter-chip">0/0</span>
+            </div>
+          </div>
+
+          <div class="search-toolbar">
+            <div class="locator-group">
+              <button id="prev-search-button" class="btn btn-outline icon-button" type="button" aria-label="Valor anterior">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              </button>
+
+              <input id="search-input" class="search-input" type="search" placeholder="Localizar qualquer valor no SQL">
+
+              <button id="next-search-button" class="btn btn-outline icon-button" type="button" aria-label="Próximo valor">
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </button>
+
+              <span id="search-position" class="counter-chip">0/0</span>
+            </div>
+
+            <span id="file-name" class="counter-chip">Arquivo: não carregado</span>
+          </div>
+
+          <div class="code-frame" aria-label="Editor SQL com contador de linhas">
+            <aside class="line-gutter" aria-hidden="true">
+              <pre id="line-numbers" class="line-numbers">1</pre>
+            </aside>
+
+            <div class="code-viewport">
+              <pre id="highlight-layer" class="code-layer"></pre>
+              <textarea id="sql-input" class="code-input" spellcheck="false" wrap="off" aria-label="Área de edição do código SQL" placeholder="Cole aqui seu SQL. Exemplo:
+SELECT *
+FROM clientes
+WHERE id_empresa = {{id_empresa}}
+  AND status = {{status}}
+  -- comentário SQL
+  AND data_criacao >= {{data_inicial}};
+
+/*
+  comentário em bloco
+*/"></textarea>
+            </div>
+          </div>
+
+          <div class="status-bar" aria-live="polite">
+            <span id="status-message">Nenhum SQL carregado.</span>
+            <span id="replacement-status">0 substituições ativas</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Componente editável em GrapesJS: Substituições -->
+      <aside class="panel values-panel" aria-labelledby="placeholder-panel-title" data-gjs-name="Painel de Substituições">
+        <header class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-icon">
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+            </span>
+            <div>
+              <h2 id="placeholder-panel-title" class="panel-title">Valores em tempo real</h2>
+              <p class="panel-subtitle">Ao preencher, substitui. Ao limpar, restaura o placeholder.</p>
+            </div>
+          </div>
+
+          <span id="placeholder-counter" class="counter-chip">0 campos</span>
+        </header>
+
+        <div class="panel-body">
+          <div class="values-actions">
+            <button id="summary-button-side" class="btn btn-outline" type="button">
+              <i class="fa-solid fa-table-list" aria-hidden="true"></i>
+              Ver Resumo Consolidado
+            </button>
+
+            <label class="btn btn-lightblue file-field" for="values-file">
+              <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+              Carregar valores (.json/.txt)
+              <input id="values-file" type="file" accept=".json,.txt,application/json,text/plain">
+            </label>
+
+            <button id="save-values-button" class="btn btn-success" type="button">
+              <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+              Salvar valores .json
+            </button>
+          </div>
+
+          <div id="placeholder-list" class="placeholder-list" aria-live="polite"></div>
+
+          <div class="small-note">
+            String aplica aspas simples. Número aplica valor bruto. Placeholder troca apenas o nome, mantendo {{novo_nome}}. O SQL-base fica preservado. Carregue um .json/.txt com valores salvos para preencher os campos automaticamente, ou salve os valores atuais em .json para reutilizar depois.
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Modal de Resumo -->
+  <section id="summary-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="summary-modal-title">
+    <div class="modal-box">
+      <header class="modal-header">
+        <h2 id="summary-modal-title" class="modal-title">Resumo consolidado das substituições</h2>
+        <button class="btn btn-outline icon-button" type="button" data-close-modal="summary-modal" aria-label="Fechar resumo">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div id="summary-content" class="modal-body"></div>
+    </div>
+  </section>
+
+  <!-- Modal de Instruções -->
+  <section id="instructions-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="instructions-modal-title">
+    <div class="modal-box">
+      <header class="modal-header">
+        <h2 id="instructions-modal-title" class="modal-title">Instruções de uso</h2>
+        <button class="btn btn-outline icon-button" type="button" data-close-modal="instructions-modal" aria-label="Fechar instruções">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <p>Esta tela substitui placeholders em códigos SQL em tempo real, mantendo uma memória interna do SQL original.</p>
+
+        <h3>Como usar</h3>
+        <ul>
+          <li>Cole o SQL no editor ou carregue um arquivo .txt ou .sql.</li>
+          <li>Use placeholders no formato {{nome_do_campo}}.</li>
+          <li>Os campos aparecem automaticamente no painel da direita.</li>
+          <li>Ao preencher um valor, ele substitui o placeholder imediatamente.</li>
+          <li>Ao apagar o valor preenchido, o placeholder original volta para o código.</li>
+        </ul>
+
+        <h3>Tipos disponíveis</h3>
+        <ul>
+          <li>String: aplica aspas simples, por exemplo 'ABC'.</li>
+          <li>Número: mantém o valor sem aspas, por exemplo 15.</li>
+          <li>Placeholder: troca apenas o nome, por exemplo {{cliente}} para {{usuario}}.</li>
+        </ul>
+
+        <h3>Carregar e salvar valores</h3>
+        <ul>
+          <li>Carregue o SQL antes de carregar os valores, para que os placeholders já estejam identificados.</li>
+          <li>Use "Carregar valores (.json/.txt)" para importar um arquivo com os valores.</li>
+          <li>Se o arquivo for um array no formato exportado por "Salvar valores .json" (<code>{"placeholder": "nome", "valor": "conteúdo", "formato": "String"}</code>), os campos são preenchidos exatamente com o valor e o formato indicados.</li>
+          <li>Para qualquer outro arquivo .txt ou .json, o sistema busca no conteúdo, para cada placeholder já identificado, um trecho no formato <code>"placeholder": "valor"</code>. Se encontrar, preenche o campo com o valor localizado, sempre no formato String.</li>
+          <li>Use "Salvar valores .json" para exportar os valores atuais de todos os placeholders identificados no formato estruturado.</li>
+        </ul>
+
+        <h3>Destaques visuais</h3>
+        <ul>
+          <li>No código escuro, placeholders ficam vermelhos e valores substituídos ficam amarelos.</li>
+          <li>No código claro, placeholders ficam em laranja escuro e valores substituídos ficam verdes.</li>
+          <li>Comentários iniciados com //, -- ou delimitados por /* e */ recebem cor própria conforme o tema do código.</li>
+          <li>O tema da tela e o tema da área de código são independentes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer id="app-footer" class="footer">         <span>Desenvolvido por <span id="footer-logo-link" class="footer-link"><img src="https://integrator.balm.cloud:62116/File/BALM?hash=VL4cwtC/o5va3T+eeLBq2dVS/h0/CbNcbGKFTda4hkB7w8eNy7+rzOpY14kXGGz3d7XiyM0X3vld3GxIdIotcMV76RhIGUxfvzDy+jCcYfM5pV/nY585HNVGd2CQ4HjNNpGGwWGgAHEut9mU4LqmxAS4TGm7gC7Nwon9FHU4WoxxDflyhwERrcoAjjP0+QskMUbs/9GQyT5CiXdJ6W8RUmqcWEHAFKOlNJTP7/TcLzxj7k2R7bqH/EZMX1Hw8T5CpSis/HG4GpDkfb/Traco5kBdh+CLIAojdQMipsDu88tBa1TYMvR7T2yDRS8yUlyVbgEMQzYpPnvbywWkMFnzNw==" alt="logo-infinity" class="footer-logo"></span>         Sua parceira em soluções inovadoras</span></footer>
+
+  <script>
+    function setPageTitle(title) {
+    document.title = title;
+  }
+
+  setPageTitle("Substituidor de Placeholders SQL");
+
+  function setFavicon(url) {
+    let link = document.querySelector("link[rel*='icon']");
+
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+
+    link.type = 'image/png';
+    link.href = url;
+  }
+
+    setFavicon('https://integrator.balm.cloud:62116/File/BALM?hash=IQ1AKNoAwtmd19OT+bU75brHc4rQTuDQHz59dSGQiFUnqzQJ1sOo/iKOhyvaZdz8I6VH95ggnQIzQ+EM6heM35IUFXLoY+CH/WEVgr0Zq6+GdnWWDXDPSY+xTFfOLcRbQJEGp77K6q+tCoUfBYMCAaA/A8HqAES0dS/+Z7k7GXWa6K54cvFmxhzAwEDxc0vSJZl/fDvSG2DoCufhhlaDxQ1HzlEB9IdXBeP3gkCs8VMIfTQ9e/jfqaRyhg0Kpf0X0PziA3VzzuHRb2vrzyJ+EeDMFk3r708cusugwJ4VFbDUZfOQ12IfhCSYJ1ZHOTkFWQMxHXu0cQHWDceLlsLOmQ==');
+
+    (() => {
+      const sqlInput = document.getElementById("sql-input");
+      const sqlFile = document.getElementById("sql-file");
+      const valuesFile = document.getElementById("values-file");
+      const saveValuesButton = document.getElementById("save-values-button");
+      const highlightLayer = document.getElementById("highlight-layer");
+      const lineNumbers = document.getElementById("line-numbers");
+      const lineTotal = document.getElementById("line-total");
+      const placeholderList = document.getElementById("placeholder-list");
+      const placeholderCounter = document.getElementById("placeholder-counter");
+      const placeholderPosition = document.getElementById("placeholder-position");
+      const searchInput = document.getElementById("search-input");
+      const searchPosition = document.getElementById("search-position");
+      const statusMessage = document.getElementById("status-message");
+      const replacementStatus = document.getElementById("replacement-status");
+      const fileName = document.getElementById("file-name");
+      const screenThemeButton = document.getElementById("screen-theme-button");
+      const codeThemeButton = document.getElementById("code-theme-button");
+      const summaryContent = document.getElementById("summary-content");
+
+      const state = {
+        screenTheme: "dark",
+        codeTheme: "dark",
+        sourceSql: "",
+        displaySql: "",
+        placeholderValues: new Map(),
+        placeholderSourceMatches: [],
+        placeholderDisplayRanges: [],
+        replacementRanges: [],
+        navigationRanges: [],
+        commentRanges: [],
+        searchMatches: [],
+        summary: [],
+        history: [],
+        currentPlaceholderIndex: -1,
+        currentSearchIndex: -1,
+        fileLabel: "Arquivo: não carregado",
+        programmaticChange: false
+      };
+
+      const codeColors = {
+        dark: {
+          normal: "#FFFFFF",
+          placeholder: "#FF3B3B",
+          replacement: "#FACC15",
+          comment: "#22C55E",
+          search: "rgba(46, 100, 164, 0.52)",
+          current: "rgba(249, 115, 22, 0.42)"
+        },
+        light: {
+          normal: "#1E293B",
+          placeholder: "#B45309",
+          replacement: "#15803D",
+          comment: "#9D174D",
+          search: "rgba(46, 100, 164, 0.20)",
+          current: "rgba(249, 115, 22, 0.30)"
+        }
+      };
+
+      const applyStyles = (element, styles) => {
+        Object.entries(styles).forEach(([property, value]) => {
+          element.style[property] = value;
+        });
+      };
+
+      const escapeHtml = (value) => {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      };
+
+      const escapeSqlString = (value) => {
+        return String(value).replace(/'/g, "''");
+      };
+
+      const normalizePlaceholderName = (value) => {
+        return String(value || "")
+          .trim()
+          .replace(/^{{\s*/, "")
+          .replace(/\s*}}$/, "")
+          .replace(/[{}]/g, "")
+          .trim();
+      };
+
+      const formatLabels = {
+        string: "String",
+        number: "Número",
+        placeholder: "Placeholder"
+      };
+
+      const formatKeysByLabel = {
+        string: "string",
+        "número": "number",
+        numero: "number",
+        number: "number",
+        placeholder: "placeholder"
+      };
+
+      const normalizeFormatKey = (value) => {
+        const key = String(value || "").trim().toLowerCase();
+        return formatKeysByLabel[key] || "string";
+      };
+
+      const getLineFromIndex = (text, index) => {
+        return String(text || "").slice(0, index).split("\n").length;
+      };
+
+      const getLineCount = (text) => {
+        return String(text || "").split("\n").length;
+      };
+
+      const getPlaceholderMatches = (text) => {
+        const regex = /{{\s*([^{}]+?)\s*}}/g;
+        const matches = [];
+        let match;
+
+        while ((match = regex.exec(String(text || ""))) !== null) {
+          const name = normalizePlaceholderName(match[1]);
+
+          if (name) {
+            matches.push({
+              full: match[0],
+              name,
+              start: match.index,
+              end: match.index + match[0].length,
+              line: getLineFromIndex(text, match.index)
+            });
+          }
+        }
+
+        return matches;
+      };
+
+      const getUniquePlaceholderNames = (matches) => {
+        return Array.from(new Set(matches.map((item) => item.name)));
+      };
+
+      const getCommentRanges = (text) => {
+        const source = String(text || "");
+        const ranges = [];
+        let index = 0;
+
+        while (index < source.length) {
+          const lineCommentDash = source.indexOf("--", index);
+          const lineCommentSlash = source.indexOf("//", index);
+          const blockCommentStart = source.indexOf("/*", index);
+
+          const candidates = [
+            { type: "line", start: lineCommentDash },
+            { type: "line", start: lineCommentSlash },
+            { type: "block", start: blockCommentStart }
+          ].filter((item) => item.start >= 0);
+
+          if (!candidates.length) {
+            break;
+          }
+
+          candidates.sort((a, b) => a.start - b.start);
+
+          const nextComment = candidates[0];
+
+          if (nextComment.type === "line") {
+            const lineEnd = source.indexOf("\n", nextComment.start);
+
+            ranges.push({
+              start: nextComment.start,
+              end: lineEnd >= 0 ? lineEnd : source.length
+            });
+
+            index = lineEnd >= 0 ? lineEnd + 1 : source.length;
+            continue;
+          }
+
+          const blockCommentEnd = source.indexOf("*/", nextComment.start + 2);
+
+          ranges.push({
+            start: nextComment.start,
+            end: blockCommentEnd >= 0 ? blockCommentEnd + 2 : source.length
+          });
+
+          index = blockCommentEnd >= 0 ? blockCommentEnd + 2 : source.length;
+        }
+
+        return ranges;
+      };
+
+      const getSearchMatches = (text, term) => {
+        const cleanTerm = String(term || "");
+
+        if (!cleanTerm) {
+          return [];
+        }
+
+        const ranges = [];
+        const source = String(text || "").toLowerCase();
+        const target = cleanTerm.toLowerCase();
+        let start = 0;
+
+        while (start < source.length) {
+          const index = source.indexOf(target, start);
+
+          if (index === -1) {
+            break;
+          }
+
+          ranges.push({
+            start: index,
+            end: index + cleanTerm.length,
+            line: getLineFromIndex(text, index)
+          });
+
+          start = index + Math.max(cleanTerm.length, 1);
+        }
+
+        return ranges;
+      };
+
+      const isInside = (range, index) => {
+        return range && index >= range.start && index < range.end;
+      };
+
+      const hasActiveValues = () => {
+        return Array.from(state.placeholderValues.values()).some((item) => String(item.value || "").trim() !== "");
+      };
+
+      const setStatus = (message, type) => {
+        const colors = {
+          neutral: state.screenTheme === "dark" ? "#94A3B8" : "#64748B",
+          success: state.screenTheme === "dark" ? "#86EFAC" : "#4E8F2C",
+          warning: state.screenTheme === "dark" ? "#FDBA74" : "#B45309",
+          error: state.screenTheme === "dark" ? "#FCA5A5" : "#B91C1C"
+        };
+
+        statusMessage.textContent = message;
+        statusMessage.style.color = colors[type] || colors.neutral;
+      };
+
+      const pushHistory = () => {
+        state.history.push({
+          sourceSql: state.sourceSql,
+          placeholderValues: Array.from(state.placeholderValues.entries()),
+          fileLabel: state.fileLabel
+        });
+
+        if (state.history.length > 40) {
+          state.history.shift();
+        }
+      };
+
+      const restoreHistory = () => {
+        const previous = state.history.pop();
+
+        if (!previous) {
+          setStatus("Não há ação anterior para desfazer.", "warning");
+          return;
+        }
+
+        state.sourceSql = previous.sourceSql;
+        state.placeholderValues = new Map(previous.placeholderValues);
+        state.fileLabel = previous.fileLabel;
+        fileName.textContent = state.fileLabel;
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+
+        updateComputedView(true);
+        setStatus("Ação desfeita.", "success");
+      };
+
+      const buildDisplaySql = () => {
+        const source = state.sourceSql;
+        const matches = getPlaceholderMatches(source);
+
+        let result = "";
+        let cursor = 0;
+        const placeholderDisplayRanges = [];
+        const replacementRanges = [];
+        const navigationRanges = [];
+        const summary = [];
+
+        matches.forEach((match) => {
+          const config = state.placeholderValues.get(match.name) || {
+            type: "string",
+            value: ""
+          };
+
+          const rawValue = String(config.value || "");
+          const hasValue = rawValue.trim() !== "";
+
+          result += source.slice(cursor, match.start);
+
+          let outputText = match.full;
+          let outputKind = "placeholder";
+          let shouldSummarize = false;
+
+          if (hasValue) {
+            if (config.type === "number") {
+              outputText = rawValue.trim();
+              outputKind = "replacement";
+              shouldSummarize = true;
+            } else if (config.type === "placeholder") {
+              const newName = normalizePlaceholderName(rawValue);
+              outputText = newName ? `{{${newName}}}` : match.full;
+              outputKind = "placeholder";
+              shouldSummarize = Boolean(newName);
+            } else {
+              outputText = `'${escapeSqlString(rawValue)}'`;
+              outputKind = "replacement";
+              shouldSummarize = true;
+            }
+          }
+
+          const rangeStart = result.length;
+          result += outputText;
+          const rangeEnd = result.length;
+
+          const displayRange = {
+            start: rangeStart,
+            end: rangeEnd,
+            line: match.line,
+            name: match.name,
+            text: outputText,
+            kind: outputKind
+          };
+
+          navigationRanges.push(displayRange);
+
+          if (outputKind === "replacement") {
+            replacementRanges.push(displayRange);
+          } else {
+            placeholderDisplayRanges.push(displayRange);
+          }
+
+          if (shouldSummarize) {
+            summary.push({
+              original: `{{${match.name}}}`,
+              line: match.line,
+              replacement: outputText,
+              type: config.type
+            });
+          }
+
+          cursor = match.end;
+        });
+
+        result += source.slice(cursor);
+
+        state.displaySql = result;
+        state.placeholderSourceMatches = matches;
+        state.placeholderDisplayRanges = placeholderDisplayRanges;
+        state.replacementRanges = replacementRanges;
+        state.navigationRanges = navigationRanges;
+        state.commentRanges = getCommentRanges(result);
+        state.summary = summary;
+        state.searchMatches = getSearchMatches(result, searchInput.value);
+
+        if (state.currentPlaceholderIndex >= state.navigationRanges.length) {
+          state.currentPlaceholderIndex = state.navigationRanges.length ? 0 : -1;
+        }
+
+        if (state.currentSearchIndex >= state.searchMatches.length) {
+          state.currentSearchIndex = state.searchMatches.length ? 0 : -1;
+        }
+      };
+
+      const getStyleKeyAt = (index) => {
+        const comment = state.commentRanges.find((range) => isInside(range, index));
+        const replacement = state.replacementRanges.find((range) => isInside(range, index));
+        const placeholder = state.placeholderDisplayRanges.find((range) => isInside(range, index));
+        const search = state.searchMatches.find((range) => isInside(range, index));
+        const currentPlaceholder = state.navigationRanges[state.currentPlaceholderIndex];
+        const currentSearch = state.searchMatches[state.currentSearchIndex];
+
+        let kind = "normal";
+
+        if (comment) {
+          kind = "comment";
+        } else if (replacement) {
+          kind = "replacement";
+        } else if (placeholder) {
+          kind = "placeholder";
+        }
+
+        const isCurrentPlaceholder = isInside(currentPlaceholder, index);
+        const isCurrentSearch = isInside(currentSearch, index);
+        const isSearch = Boolean(search);
+
+        return `${kind}|${isSearch ? "search" : "no-search"}|${isCurrentPlaceholder ? "current-placeholder" : "no-current-placeholder"}|${isCurrentSearch ? "current-search" : "no-current-search"}`;
+      };
+
+      const getStyleFromKey = (key) => {
+        const colors = codeColors[state.codeTheme];
+        const parts = String(key || "normal|no-search|no-current-placeholder|no-current-search").split("|");
+        const kind = parts[0];
+        const hasSearch = parts[1] === "search";
+        const isCurrentPlaceholder = parts[2] === "current-placeholder";
+        const isCurrentSearch = parts[3] === "current-search";
+        const styles = [];
+
+        if (kind === "placeholder") {
+          styles.push(`color: ${colors.placeholder}`);
+          styles.push("font-weight: 900");
+        } else if (kind === "replacement") {
+          styles.push(`color: ${colors.replacement}`);
+          styles.push("font-weight: 900");
+        } else if (kind === "comment") {
+          styles.push(`color: ${colors.comment}`);
+          styles.push("font-weight: 900");
+        } else {
+          styles.push(`color: ${colors.normal}`);
+        }
+
+        if (hasSearch) {
+          styles.push(`background: ${colors.search}`);
+          styles.push("border-radius: 3px");
+        }
+
+        if (isCurrentPlaceholder || isCurrentSearch) {
+          styles.push(`background: ${colors.current}`);
+          styles.push("border-bottom: 2px solid #F97316");
+          styles.push("border-radius: 3px");
+        }
+
+        return styles.join("; ");
+      };
+
+      const renderHighlights = () => {
+        try {
+          const text = state.displaySql || "";
+          let html = "";
+          let buffer = "";
+          let previousKey = null;
+
+          for (let index = 0; index < text.length; index += 1) {
+            const key = getStyleKeyAt(index);
+
+            if (previousKey !== null && key !== previousKey) {
+              const style = getStyleFromKey(previousKey);
+              html += `<span style="${style}">${escapeHtml(buffer)}</span>`;
+              buffer = "";
+            }
+
+            buffer += text[index];
+            previousKey = key;
+          }
+
+          if (buffer) {
+            const style = getStyleFromKey(previousKey);
+            html += `<span style="${style}">${escapeHtml(buffer)}</span>`;
+          }
+
+          highlightLayer.innerHTML = html || "";
+          updateScrollSync();
+          updateCounters();
+        } catch (error) {
+          const fallbackColor = state.codeTheme === "dark" ? "#FFFFFF" : "#1E293B";
+          highlightLayer.innerHTML = `<span style="color: ${fallbackColor};">${escapeHtml(state.displaySql || "")}</span>`;
+          console.error("Erro ao renderizar SQL:", error);
+        }
+      };
+
+      const renderLineNumbers = () => {
+        const total = getLineCount(state.displaySql);
+        const numbers = Array.from({ length: total }, (_, index) => String(index + 1)).join("\n");
+
+        lineNumbers.textContent = numbers || "1";
+        lineTotal.textContent = total === 1 ? "1 linha" : `${total} linhas`;
+      };
+
+      const createEmptyState = () => {
+        placeholderList.innerHTML = "";
+
+        const wrapper = document.createElement("div");
+        applyStyles(wrapper, {
+          display: "grid",
+          placeItems: "center",
+          minHeight: "220px",
+          padding: "18px",
+          border: "1px dashed #CBD5E1",
+          borderRadius: "14px",
+          background: state.screenTheme === "dark" ? "#0F172A" : "#F8FAFC",
+          textAlign: "center"
+        });
+
+        const icon = document.createElement("i");
+        icon.setAttribute("class", "fa-regular fa-square-check");
+        icon.setAttribute("aria-hidden", "true");
+        applyStyles(icon, {
+          marginBottom: "10px",
+          color: state.screenTheme === "dark" ? "#93C5FD" : "#2E64A4",
+          fontSize: "30px"
+        });
+
+        const title = document.createElement("h3");
+        title.textContent = "Nenhum placeholder encontrado";
+        applyStyles(title, {
+          margin: "0 0 7px",
+          color: state.screenTheme === "dark" ? "#F8FAFC" : "#1E293B",
+          fontSize: "14px",
+          fontWeight: "900"
+        });
+
+        const text = document.createElement("p");
+        text.textContent = "Use o formato {{campo}} no SQL.";
+        applyStyles(text, {
+          margin: "0",
+          color: state.screenTheme === "dark" ? "#94A3B8" : "#64748B",
+          fontSize: "12px",
+          lineHeight: "1.5"
+        });
+
+        wrapper.appendChild(icon);
+        wrapper.appendChild(title);
+        wrapper.appendChild(text);
+        placeholderList.appendChild(wrapper);
+      };
+
+      const createPlaceholderRow = (placeholderName) => {
+        const saved = state.placeholderValues.get(placeholderName) || {
+          type: "string",
+          value: ""
+        };
+
+        const row = document.createElement("article");
+        applyStyles(row, {
+          display: "grid",
+          gridTemplateColumns: "minmax(120px, 1fr) 122px minmax(150px, 1.1fr)",
+          gap: "8px",
+          alignItems: "center",
+          padding: "9px",
+          border: state.screenTheme === "dark" ? "1px solid #334155" : "1px solid #E2E8F0",
+          borderRadius: "12px",
+          background: state.screenTheme === "dark" ? "#0F172A" : "#FFFFFF",
+          boxShadow: state.screenTheme === "dark" ? "none" : "0 6px 14px rgba(15, 23, 42, 0.05)"
+        });
+
+        const name = document.createElement("code");
+        name.textContent = `{{${placeholderName}}}`;
+        name.title = `{{${placeholderName}}}`;
+        applyStyles(name, {
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          color: state.codeTheme === "dark" ? "#FF3B3B" : "#B45309",
+          fontFamily: "Consolas, Monaco, monospace",
+          fontSize: "12px",
+          fontWeight: "900"
+        });
+
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", `Tipo de dado para ${placeholderName}`);
+        applyStyles(select, {
+          width: "100%",
+          height: "34px",
+          padding: "0 8px",
+          border: state.screenTheme === "dark" ? "1px solid #334155" : "1px solid #CBD5E1",
+          borderRadius: "9px",
+          background: state.screenTheme === "dark" ? "#111827" : "#F8FAFC",
+          color: state.screenTheme === "dark" ? "#E2E8F0" : "#1E293B",
+          outline: "none",
+          fontSize: "12px",
+          fontWeight: "800"
+        });
+
+        [
+          { value: "string", label: "String" },
+          { value: "number", label: "Número" },
+          { value: "placeholder", label: "Placeholder" }
+        ].forEach((optionData) => {
+          const option = document.createElement("option");
+          option.value = optionData.value;
+          option.textContent = optionData.label;
+          select.appendChild(option);
+        });
+
+        select.value = saved.type;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = saved.value;
+        input.placeholder = "Valor";
+        input.setAttribute("aria-label", `Valor para ${placeholderName}`);
+        applyStyles(input, {
+          width: "100%",
+          height: "34px",
+          padding: "0 9px",
+          border: state.screenTheme === "dark" ? "1px solid #334155" : "1px solid #CBD5E1",
+          borderRadius: "9px",
+          background: state.screenTheme === "dark" ? "#111827" : "#FFFFFF",
+          color: state.screenTheme === "dark" ? "#E2E8F0" : "#1E293B",
+          outline: "none",
+          fontSize: "12px",
+          fontWeight: "700"
+        });
+
+        const updateValue = () => {
+          pushHistory();
+
+          state.placeholderValues.set(placeholderName, {
+            type: select.value,
+            value: input.value
+          });
+
+          state.currentPlaceholderIndex = -1;
+          updateComputedView(false);
+          setStatus("Substituição em tempo real aplicada.", "success");
+        };
+
+        select.addEventListener("change", updateValue);
+        input.addEventListener("input", updateValue);
+
+        row.appendChild(name);
+        row.appendChild(select);
+        row.appendChild(input);
+
+        return row;
+      };
+
+      const renderPlaceholderRows = () => {
+        const uniqueNames = getUniquePlaceholderNames(state.placeholderSourceMatches);
+        const activeSet = new Set(uniqueNames);
+
+        Array.from(state.placeholderValues.keys()).forEach((key) => {
+          if (!activeSet.has(key)) {
+            state.placeholderValues.delete(key);
+          }
+        });
+
+        uniqueNames.forEach((name) => {
+          if (!state.placeholderValues.has(name)) {
+            state.placeholderValues.set(name, {
+              type: "string",
+              value: ""
+            });
+          }
+        });
+
+        placeholderCounter.textContent = uniqueNames.length === 1 ? "1 campo" : `${uniqueNames.length} campos`;
+
+        if (!uniqueNames.length) {
+          createEmptyState();
+          return;
+        }
+
+        placeholderList.innerHTML = "";
+
+        uniqueNames.forEach((placeholderName) => {
+          placeholderList.appendChild(createPlaceholderRow(placeholderName));
+        });
+      };
+
+      const updateCounters = () => {
+        const placeholderTotal = state.navigationRanges.length;
+        const searchTotal = state.searchMatches.length;
+
+        placeholderPosition.textContent = placeholderTotal
+          ? `${state.currentPlaceholderIndex + 1 || 1}/${placeholderTotal}`
+          : "0/0";
+
+        searchPosition.textContent = searchTotal
+          ? `${state.currentSearchIndex + 1 || 1}/${searchTotal}`
+          : "0/0";
+      };
+
+      const updateReplacementStatus = () => {
+        const count = state.summary.length;
+        replacementStatus.textContent = count === 1 ? "1 substituição ativa" : `${count} substituições ativas`;
+      };
+
+      const updateScrollSync = () => {
+        highlightLayer.style.transform = `translate(${-sqlInput.scrollLeft}px, ${-sqlInput.scrollTop}px)`;
+        lineNumbers.style.transform = `translateY(${-sqlInput.scrollTop}px)`;
+      };
+
+      const updateComputedView = (shouldRenderRows) => {
+        buildDisplaySql();
+
+        state.programmaticChange = true;
+        sqlInput.value = state.displaySql;
+        sqlInput.readOnly = hasActiveValues();
+        state.programmaticChange = false;
+
+        renderLineNumbers();
+
+        if (shouldRenderRows) {
+          renderPlaceholderRows();
+        }
+
+        renderHighlights();
+        updateReplacementStatus();
+
+        if (!state.sourceSql.trim()) {
+          setStatus("Nenhum SQL carregado.", "neutral");
+        } else if (state.placeholderSourceMatches.length) {
+          setStatus(`${state.placeholderSourceMatches.length} ocorrência(s) de placeholder encontrada(s).`, "success");
+        } else {
+          setStatus("SQL carregado sem placeholders ativos.", "warning");
+        }
+      };
+
+      const goToRange = (range) => {
+        if (!range) {
+          return;
+        }
+
+        const lineHeight = window.matchMedia("(max-width: 720px)").matches ? 20 : 21;
+        const lineIndex = Math.max(range.line - 1, 0);
+        const targetTop = Math.max(0, (lineIndex * lineHeight) - (sqlInput.clientHeight / 2));
+
+        sqlInput.focus();
+        sqlInput.setSelectionRange(range.start, range.end);
+        sqlInput.scrollTop = targetTop;
+        updateScrollSync();
+      };
+
+      const movePlaceholder = (direction) => {
+        if (!state.navigationRanges.length) {
+          setStatus("Nenhum placeholder encontrado para localizar.", "warning");
+          return;
+        }
+
+        if (state.currentPlaceholderIndex === -1) {
+          state.currentPlaceholderIndex = 0;
+        } else {
+          state.currentPlaceholderIndex = (state.currentPlaceholderIndex + direction + state.navigationRanges.length) % state.navigationRanges.length;
+        }
+
+        renderHighlights();
+        goToRange(state.navigationRanges[state.currentPlaceholderIndex]);
+      };
+
+      const moveSearch = (direction) => {
+        state.searchMatches = getSearchMatches(state.displaySql, searchInput.value);
+
+        if (!searchInput.value.trim()) {
+          setStatus("Digite um valor para localizar no SQL.", "warning");
+          return;
+        }
+
+        if (!state.searchMatches.length) {
+          state.currentSearchIndex = -1;
+          renderHighlights();
+          setStatus("Nenhuma ocorrência encontrada para a busca.", "warning");
+          return;
+        }
+
+        if (state.currentSearchIndex === -1) {
+          state.currentSearchIndex = 0;
+        } else {
+          state.currentSearchIndex = (state.currentSearchIndex + direction + state.searchMatches.length) % state.searchMatches.length;
+        }
+
+        renderHighlights();
+        goToRange(state.searchMatches[state.currentSearchIndex]);
+      };
+
+      const copyCurrentSql = async () => {
+        if (!state.displaySql.trim()) {
+          setStatus("Não há SQL para copiar.", "warning");
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(state.displaySql);
+          setStatus("SQL copiado para a área de transferência.", "success");
+        } catch (error) {
+          sqlInput.focus();
+          sqlInput.select();
+          document.execCommand("copy");
+          setStatus("SQL copiado usando método alternativo.", "success");
+        }
+      };
+
+      const saveCurrentSql = () => {
+        if (!state.displaySql.trim()) {
+          setStatus("Não há SQL para salvar.", "warning");
+          return;
+        }
+
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[:T]/g, "-");
+        const blob = new Blob([state.displaySql], {
+          type: "text/plain;charset=utf-8"
+        });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `sql-final-${timestamp}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        link.remove();
+
+        setStatus("Arquivo .txt gerado.", "success");
+      };
+
+      const applyValuesFromData = (data) => {
+        if (!Array.isArray(data)) {
+          setStatus("Arquivo de valores inválido: esperado um array JSON.", "error");
+          return;
+        }
+
+        pushHistory();
+
+        let appliedCount = 0;
+
+        data.forEach((item) => {
+          if (!item || typeof item !== "object") {
+            return;
+          }
+
+          const rawName = item.placeholder ?? item.nome ?? item.name ?? "";
+          const name = normalizePlaceholderName(rawName);
+
+          if (!name) {
+            return;
+          }
+
+          const type = normalizeFormatKey(item.formato ?? item.tipo ?? item.type);
+          const value = item.valor ?? item.value ?? "";
+
+          state.placeholderValues.set(name, {
+            type,
+            value: String(value)
+          });
+
+          appliedCount += 1;
+        });
+
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+
+        updateComputedView(true);
+
+        if (appliedCount) {
+          setStatus(`${appliedCount} valor(es) carregado(s) do arquivo.`, "success");
+        } else {
+          setStatus("Nenhum valor válido encontrado no arquivo.", "warning");
+        }
+      };
+
+      const applyGenericValuesFromText = (text) => {
+        const uniqueNames = getUniquePlaceholderNames(state.placeholderSourceMatches);
+
+        if (!uniqueNames.length) {
+          setStatus("Carregue o SQL primeiro para identificar os placeholders.", "warning");
+          return;
+        }
+
+        pushHistory();
+
+        let appliedCount = 0;
+
+        uniqueNames.forEach((name) => {
+          const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const pattern = new RegExp(`["']${escapedName}["']\\s*:\\s*["']([^"']*)["']`, "i");
+          const match = text.match(pattern);
+
+          if (match) {
+            state.placeholderValues.set(name, {
+              type: "string",
+              value: match[1]
+            });
+            appliedCount += 1;
+          }
+        });
+
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+
+        updateComputedView(true);
+
+        if (appliedCount) {
+          setStatus(`${appliedCount} placeholder(s) localizado(s) e preenchido(s) a partir do arquivo.`, "success");
+        } else {
+          setStatus("Nenhum placeholder correspondente foi encontrado no arquivo.", "warning");
+        }
+      };
+
+      const saveValuesJson = () => {
+        const uniqueNames = getUniquePlaceholderNames(state.placeholderSourceMatches);
+
+        if (!uniqueNames.length) {
+          setStatus("Não há placeholders identificados para salvar.", "warning");
+          return;
+        }
+
+        const data = uniqueNames.map((name) => {
+          const config = state.placeholderValues.get(name) || {
+            type: "string",
+            value: ""
+          };
+
+          return {
+            placeholder: name,
+            valor: String(config.value || ""),
+            formato: formatLabels[config.type] || formatLabels.string
+          };
+        });
+
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[:T]/g, "-");
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json;charset=utf-8"
+        });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `placeholders-valores-${timestamp}.json`;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        link.remove();
+
+        setStatus("Arquivo .json de valores gerado.", "success");
+      };
+
+      const resetValues = () => {
+        if (!hasActiveValues()) {
+          setStatus("Não há valores preenchidos para resetar.", "warning");
+          return;
+        }
+
+        pushHistory();
+
+        state.placeholderValues.forEach((config, name) => {
+          state.placeholderValues.set(name, {
+            type: config.type,
+            value: ""
+          });
+        });
+
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+
+        updateComputedView(true);
+        setStatus("Valores resetados. Placeholders originais restaurados.", "success");
+      };
+
+      const clearAll = () => {
+        pushHistory();
+
+        state.sourceSql = "";
+        state.displaySql = "";
+        state.placeholderValues.clear();
+        state.placeholderSourceMatches = [];
+        state.placeholderDisplayRanges = [];
+        state.replacementRanges = [];
+        state.navigationRanges = [];
+        state.commentRanges = [];
+        state.searchMatches = [];
+        state.summary = [];
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+        state.fileLabel = "Arquivo: não carregado";
+
+        sqlFile.value = "";
+        valuesFile.value = "";
+        searchInput.value = "";
+        fileName.textContent = state.fileLabel;
+
+        updateComputedView(true);
+        setStatus("Conteúdo limpo.", "neutral");
+      };
+
+      const openModal = (id) => {
+        const modal = document.getElementById(id);
+
+        if (!modal) {
+          return;
+        }
+
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+      };
+
+      const closeModal = (id) => {
+        const modal = document.getElementById(id);
+
+        if (!modal) {
+          return;
+        }
+
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+      };
+
+      const renderSummaryModal = () => {
+        summaryContent.innerHTML = "";
+
+        if (!state.summary.length) {
+          const empty = document.createElement("p");
+          empty.textContent = "Nenhuma substituição ativa no momento.";
+          applyStyles(empty, {
+            margin: "0",
+            color: state.screenTheme === "dark" ? "#CBD5E1" : "#475569",
+            fontWeight: "700"
+          });
+          summaryContent.appendChild(empty);
+          return;
+        }
+
+        const total = document.createElement("p");
+        total.textContent = `Total de alterações ativas: ${state.summary.length}`;
+        applyStyles(total, {
+          margin: "0 0 14px",
+          color: state.screenTheme === "dark" ? "#E2E8F0" : "#1E293B",
+          fontWeight: "900"
+        });
+        summaryContent.appendChild(total);
+
+        state.summary.forEach((item) => {
+          const line = document.createElement("div");
+          applyStyles(line, {
+            display: "grid",
+            gridTemplateColumns: "minmax(150px, 1fr) 90px minmax(140px, 1fr)",
+            gap: "10px",
+            alignItems: "center",
+            padding: "10px 0",
+            borderBottom: state.screenTheme === "dark" ? "1px solid #334155" : "1px solid #E2E8F0",
+            fontFamily: "Consolas, Monaco, monospace",
+            fontSize: "13px"
+          });
+
+          const original = document.createElement("span");
+          original.textContent = item.original;
+          applyStyles(original, {
+            color: state.codeTheme === "dark" ? "#FF3B3B" : "#B45309",
+            fontWeight: "900",
+            overflowWrap: "anywhere"
+          });
+
+          const middle = document.createElement("span");
+          middle.textContent = `linha ${item.line} -->`;
+          applyStyles(middle, {
+            color: state.screenTheme === "dark" ? "#94A3B8" : "#64748B",
+            fontWeight: "900",
+            whiteSpace: "nowrap"
+          });
+
+          const replacement = document.createElement("span");
+          replacement.textContent = item.replacement;
+          applyStyles(replacement, {
+            color: item.type === "placeholder"
+              ? state.codeTheme === "dark" ? "#FF3B3B" : "#B45309"
+              : state.codeTheme === "dark" ? "#FACC15" : "#15803D",
+            fontWeight: "900",
+            overflowWrap: "anywhere"
+          });
+
+          line.appendChild(original);
+          line.appendChild(middle);
+          line.appendChild(replacement);
+          summaryContent.appendChild(line);
+        });
+      };
+
+      const toggleScreenTheme = () => {
+        state.screenTheme = state.screenTheme === "dark" ? "light" : "dark";
+        document.body.setAttribute("data-theme", state.screenTheme);
+
+        screenThemeButton.innerHTML = state.screenTheme === "dark"
+          ? '<i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> Tela clara'
+          : '<i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i> Tela escura';
+
+        updateComputedView(true);
+      };
+
+      const toggleCodeTheme = () => {
+        state.codeTheme = state.codeTheme === "dark" ? "light" : "dark";
+        document.body.setAttribute("data-code-theme", state.codeTheme);
+
+        codeThemeButton.innerHTML = state.codeTheme === "dark"
+          ? '<i class="fa-solid fa-terminal" aria-hidden="true"></i> Código claro'
+          : '<i class="fa-solid fa-terminal" aria-hidden="true"></i> Código escuro';
+
+        updateComputedView(true);
+      };
+
+      sqlInput.addEventListener("input", () => {
+        if (state.programmaticChange) {
+          return;
+        }
+
+        if (hasActiveValues()) {
+          state.programmaticChange = true;
+          sqlInput.value = state.displaySql;
+          state.programmaticChange = false;
+          setStatus("Para editar o SQL-base, limpe os valores preenchidos.", "warning");
+          return;
+        }
+
+        state.sourceSql = sqlInput.value;
+        state.fileLabel = sqlFile.files[0] ? `Arquivo: ${sqlFile.files[0].name}` : "Arquivo: edição manual";
+        fileName.textContent = state.fileLabel;
+        state.currentPlaceholderIndex = -1;
+        state.currentSearchIndex = -1;
+        updateComputedView(true);
+      });
+
+      sqlInput.addEventListener("scroll", updateScrollSync);
+
+      sqlInput.addEventListener("keydown", (event) => {
+        if (event.key === "Tab" && !sqlInput.readOnly) {
+          event.preventDefault();
+
+          const start = sqlInput.selectionStart;
+          const end = sqlInput.selectionEnd;
+          const value = sqlInput.value;
+
+          sqlInput.value = `${value.substring(0, start)}  ${value.substring(end)}`;
+          sqlInput.selectionStart = start + 2;
+          sqlInput.selectionEnd = start + 2;
+          sqlInput.dispatchEvent(new Event("input"));
+        }
+      });
+
+      sqlFile.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+
+        if (!file) {
+          return;
+        }
+
+        const isAcceptedFile = file.name.toLowerCase().endsWith(".txt") ||
+          file.name.toLowerCase().endsWith(".sql") ||
+          file.type === "text/plain";
+
+        if (!isAcceptedFile) {
+          setStatus("Formato inválido. Use arquivos .txt ou .sql.", "error");
+          sqlFile.value = "";
+          return;
+        }
+
+        pushHistory();
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          state.sourceSql = String(reader.result || "");
+          state.placeholderValues.clear();
+          state.fileLabel = `Arquivo: ${file.name}`;
+          fileName.textContent = state.fileLabel;
+          state.currentPlaceholderIndex = -1;
+          state.currentSearchIndex = -1;
+          searchInput.value = "";
+
+          updateComputedView(true);
+          setStatus("Arquivo carregado com sucesso.", "success");
+        };
+
+        reader.onerror = () => {
+          setStatus("Não foi possível ler o arquivo selecionado.", "error");
+        };
+
+        reader.readAsText(file, "UTF-8");
+      });
+
+      valuesFile.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+
+        if (!file) {
+          return;
+        }
+
+        const isAcceptedFile = file.name.toLowerCase().endsWith(".json") ||
+          file.name.toLowerCase().endsWith(".txt") ||
+          file.type === "application/json" ||
+          file.type === "text/plain";
+
+        if (!isAcceptedFile) {
+          setStatus("Formato inválido. Use arquivos .json ou .txt.", "error");
+          valuesFile.value = "";
+          return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          const rawText = String(reader.result || "");
+          let parsed = null;
+
+          try {
+            parsed = JSON.parse(rawText);
+          } catch (error) {
+            parsed = null;
+          }
+
+          if (Array.isArray(parsed)) {
+            applyValuesFromData(parsed);
+          } else {
+            applyGenericValuesFromText(rawText);
+          }
+
+          valuesFile.value = "";
+        };
+
+        reader.onerror = () => {
+          setStatus("Não foi possível ler o arquivo de valores selecionado.", "error");
+          valuesFile.value = "";
+        };
+
+        reader.readAsText(file, "UTF-8");
+      });
+
+      searchInput.addEventListener("input", () => {
+        state.currentSearchIndex = -1;
+        state.searchMatches = getSearchMatches(state.displaySql, searchInput.value);
+        renderHighlights();
+      });
+
+      document.getElementById("detect-button").addEventListener("click", () => updateComputedView(true));
+      document.getElementById("clear-button").addEventListener("click", clearAll);
+      document.getElementById("undo-button").addEventListener("click", restoreHistory);
+      document.getElementById("reset-values-button").addEventListener("click", resetValues);
+      document.getElementById("copy-button").addEventListener("click", copyCurrentSql);
+      document.getElementById("save-button").addEventListener("click", saveCurrentSql);
+      saveValuesButton.addEventListener("click", saveValuesJson);
+      document.getElementById("screen-theme-button").addEventListener("click", toggleScreenTheme);
+      document.getElementById("code-theme-button").addEventListener("click", toggleCodeTheme);
+
+      document.getElementById("locate-placeholder-button").addEventListener("click", () => movePlaceholder(1));
+      document.getElementById("prev-placeholder-button").addEventListener("click", () => movePlaceholder(-1));
+      document.getElementById("next-placeholder-button").addEventListener("click", () => movePlaceholder(1));
+
+      document.getElementById("prev-search-button").addEventListener("click", () => moveSearch(-1));
+      document.getElementById("next-search-button").addEventListener("click", () => moveSearch(1));
+
+      document.getElementById("summary-button").addEventListener("click", () => {
+        renderSummaryModal();
+        openModal("summary-modal");
+      });
+
+      document.getElementById("summary-button-side").addEventListener("click", () => {
+        renderSummaryModal();
+        openModal("summary-modal");
+      });
+
+      document.getElementById("instructions-button").addEventListener("click", () => {
+        openModal("instructions-modal");
+      });
+
+      document.querySelectorAll("[data-close-modal]").forEach((button) => {
+        button.addEventListener("click", () => {
+          closeModal(button.getAttribute("data-close-modal"));
+        });
+      });
+
+      document.querySelectorAll(".modal-overlay").forEach((modal) => {
+        modal.addEventListener("click", (event) => {
+          if (event.target === modal) {
+            closeModal(modal.id);
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeModal("summary-modal");
+          closeModal("instructions-modal");
+        }
+      });
+
+      updateComputedView(true);
+    })();
+  </script>
+</body>
+</html>
